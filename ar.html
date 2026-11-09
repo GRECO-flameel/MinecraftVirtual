@@ -124,6 +124,16 @@
         this.el.setObject3D('mesh', grupo);
       }
     });
+
+    const mundo = document.querySelector('[mundo-de-blocos]');
+let ang = 0, xIni = null;
+window.addEventListener('touchstart', e => xIni = e.touches[0].clientX);
+window.addEventListener('touchmove', e => {
+  if (xIni === null) return;
+  ang += (e.touches[0].clientX - xIni) * 0.5; xIni = e.touches[0].clientX;
+  mundo.setAttribute('rotation', `90 ${ang} 0`);
+});
+window.addEventListener('touchend', () => xIni = null);
   </script>
 </head>
 <body>
