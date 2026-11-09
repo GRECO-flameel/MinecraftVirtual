@@ -167,16 +167,17 @@
     });
 
     // Girar o mundo para todos os lados arrastando o dedo (ou o mouse)
-    // horizontal = gira em volta do próprio eixo | vertical = inclina para frente/trás
+    // os eixos são os da tela: horizontal = gira para esquerda/direita | vertical = gira para cima/baixo
     const mundo = document.querySelector('[mundo-de-blocos]');
-    let giro = 0, incl = 0, ini = null;
+    const T = AFRAME.THREE, eixoX = new T.Vector3(1, 0, 0), eixoY = new T.Vector3(0, 1, 0), q = new T.Quaternion();
+    let ini = null;
     window.addEventListener('pointerdown', e => ini = { x: e.clientX, y: e.clientY });
     window.addEventListener('pointermove', e => {
       if (!ini) return;
-      giro += (e.clientX - ini.x) * 0.5;
-      incl -= (e.clientY - ini.y) * 0.5;
+      const o = mundo.object3D;
+      o.quaternion.premultiply(q.setFromAxisAngle(eixoY, T.MathUtils.degToRad((e.clientX - ini.x) * 0.5)));
+      o.quaternion.premultiply(q.setFromAxisAngle(eixoX, T.MathUtils.degToRad(-(e.clientY - ini.y) * 0.5)));
       ini = { x: e.clientX, y: e.clientY };
-      mundo.object3D.rotation.set(AFRAME.THREE.MathUtils.degToRad(90 + incl), AFRAME.THREE.MathUtils.degToRad(giro), 0);
     });
     ['pointerup', 'pointercancel'].forEach(ev => window.addEventListener(ev, () => ini = null));
   </script>
