@@ -167,16 +167,25 @@
     });
 
     // Girar o mundo para todos os lados arrastando o dedo (ou o mouse)
-    // os eixos são os da tela: horizontal = gira para esquerda/direita | vertical = gira para cima/baixo
+    // os eixos vêm da câmera (da tela do celular), então o giro segue o dedo
+    // não importa de que lado você esteja olhando a imagem nem como o mundo já esteja girado
     const mundo = document.querySelector('[mundo-de-blocos]');
-    const T = AFRAME.THREE, eixoX = new T.Vector3(1, 0, 0), eixoY = new T.Vector3(0, 1, 0), q = new T.Quaternion();
+    const cam = document.querySelector('a-camera');
+    const T = AFRAME.THREE, q = new T.Quaternion(), qCam = new T.Quaternion(), qPai = new T.Quaternion(), dir = new T.Vector3();
+    const DIREITA = new T.Vector3(1, 0, 0), CIMA = new T.Vector3(0, 1, 0);
+    const girar = (eixoTela, graus) => {
+      const o = mundo.object3D;
+      cam.object3D.getWorldQuaternion(qCam);
+      o.parent.getWorldQuaternion(qPai);
+      dir.copy(eixoTela).applyQuaternion(qCam).applyQuaternion(qPai.invert()).normalize(); // eixo da tela no espaço da imagem
+      o.quaternion.premultiply(q.setFromAxisAngle(dir, T.MathUtils.degToRad(graus)));
+    };
     let ini = null;
     window.addEventListener('pointerdown', e => ini = { x: e.clientX, y: e.clientY });
     window.addEventListener('pointermove', e => {
       if (!ini) return;
-      const o = mundo.object3D;
-      o.quaternion.premultiply(q.setFromAxisAngle(eixoY, T.MathUtils.degToRad((e.clientX - ini.x) * 0.5)));
-      o.quaternion.premultiply(q.setFromAxisAngle(eixoX, T.MathUtils.degToRad(-(e.clientY - ini.y) * 0.5)));
+      girar(CIMA, (e.clientX - ini.x) * 0.5);    // arrastar para os lados
+      girar(DIREITA, (e.clientY - ini.y) * 0.5); // arrastar para cima/baixo
       ini = { x: e.clientX, y: e.clientY };
     });
     ['pointerup', 'pointercancel'].forEach(ev => window.addEventListener(ev, () => ini = null));
