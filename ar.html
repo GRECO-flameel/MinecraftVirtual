@@ -136,7 +136,7 @@
   </div>
 
   <a-scene
-    mindar-image="imageTargetSrc: assets/arvore.mind; uiScanning: no; uiLoading: yes"
+    mindar-image="imageTargetSrc: assets/bloco.mind; uiScanning: no; uiLoading: yes"
     color-space="sRGB"
     renderer="colorManagement: true; antialias: true"
     vr-mode-ui="enabled: false"
@@ -174,7 +174,7 @@
     window.addEventListener('pointermove', e => {
       if (!ini) return;
       giro += (e.clientX - ini.x) * 0.5;
-      incl += (e.clientY - ini.y) * 0.5;
+      incl -= (e.clientY - ini.y) * 0.5;
       ini = { x: e.clientX, y: e.clientY };
       mundo.object3D.rotation.set(AFRAME.THREE.MathUtils.degToRad(90 + incl), AFRAME.THREE.MathUtils.degToRad(giro), 0);
     });
