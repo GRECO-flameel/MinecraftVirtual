@@ -10,7 +10,8 @@
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+    html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; touch-action: none; }
+    canvas, video { touch-action: none; }
     #hud {
       position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
       display: flex; flex-direction: column; align-items: center; gap: 10px;
@@ -165,16 +166,19 @@
       status.className = '';
     });
 
-    // Girar o mundo arrastando o dedo na tela
+    // Girar o mundo para todos os lados arrastando o dedo (ou o mouse)
+    // horizontal = gira em volta do próprio eixo | vertical = inclina para frente/trás
     const mundo = document.querySelector('[mundo-de-blocos]');
-    let ang = 0, xIni = null;
-    window.addEventListener('touchstart', e => xIni = e.touches[0].clientX);
-    window.addEventListener('touchmove', e => {
-      if (xIni === null) return;
-      ang += (e.touches[0].clientX - xIni) * 0.5; xIni = e.touches[0].clientX;
-      mundo.setAttribute('rotation', `90 ${ang} 0`);
+    let giro = 0, incl = 0, ini = null;
+    window.addEventListener('pointerdown', e => ini = { x: e.clientX, y: e.clientY });
+    window.addEventListener('pointermove', e => {
+      if (!ini) return;
+      giro += (e.clientX - ini.x) * 0.5;
+      incl += (e.clientY - ini.y) * 0.5;
+      ini = { x: e.clientX, y: e.clientY };
+      mundo.object3D.rotation.set(AFRAME.THREE.MathUtils.degToRad(90 + incl), AFRAME.THREE.MathUtils.degToRad(giro), 0);
     });
-    window.addEventListener('touchend', () => xIni = null);
+    ['pointerup', 'pointercancel'].forEach(ev => window.addEventListener(ev, () => ini = null));
   </script>
 </body>
 </html>
