@@ -1,6 +1,6 @@
 # Cartão Interativo em Realidade Aumentada
 
-Projeto web de RA baseada em imagem: aponte a câmera para a árvore e aparece sobre ela um pequeno **mundo de blocos** em estilo voxel/pixel art
+Projeto web de RA baseada em imagem: aponte a câmera para o bloco de grama e aparece sobre ele um pequeno **mundo de blocos** em estilo voxel/pixel art
 (chão de grama e terra, árvore, laguinho com areia, pedras e tábuas), montado com cubos texturizados.
 
 **Tecnologias:** HTML + [A-Frame](https://aframe.io) (3D) + [MindAR](https://github.com/hiukim/mind-ar-js) (rastreamento de imagem). Sem servidor, sem instalação.
@@ -9,8 +9,8 @@ Projeto web de RA baseada em imagem: aponte a câmera para a árvore e aparece s
 ```
 index.html        → página inicial (instruções + imagem-alvo)
 ar.html           → câmera com a realidade aumentada
-assets/arvore.png   → imagem-alvo
-assets/arvore.mind  → "impressão digital" da imagem, usada pelo rastreador
+assets/bloco.png    → imagem-alvo (bloco de grama)
+assets/bloco.mind   → "impressão digital" da imagem, usada pelo rastreador
 assets/blocos/      → texturas 16x16 dos blocos (grama, terra, tronco, folhas...)
 ```
 
@@ -25,12 +25,12 @@ assets/blocos/      → texturas 16x16 dos blocos (grama, terra, tronco, folhas.
 ## Na apresentação
 1. Projete o `index.html` no telão (a imagem-alvo aparece na página).
 2. No celular, abra o mesmo link → **Abrir câmera AR** → permita a câmera.
-3. Aponte para o telão: o mundo de blocos aparece em cima da árvore. Incline o celular para ver os lados.
+3. Aponte para o telão: o mundo de blocos aparece em cima do bloco. Incline o celular para ver os lados.
 
 ## Usar sua própria imagem (opcional)
 1. Acesse o compilador do MindAR: https://hiukim.github.io/mind-ar-js-doc/tools/compile
 2. Envie sua imagem (de preferência com bastante detalhe e contraste) e baixe o `targets.mind`.
-3. Substitua `assets/arvore.mind` pelo novo arquivo (mantendo o nome) e `assets/arvore.png` pela sua imagem.
+3. Substitua `assets/bloco.mind` pelo novo arquivo (mantendo o nome) e `assets/bloco.png` pela sua imagem.
 
 ## Testar no PC antes de subir
 ```
