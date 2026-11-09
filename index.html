@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Realidade Aumentada – Cartão Interativo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; font-family: system-ui, sans-serif;
+      background: radial-gradient(circle at top, #1b2a4a, #0b1020); color: #fff;
+      display: flex; justify-content: center; padding: 24px 16px;
+    }
+    main { max-width: 640px; width: 100%; text-align: center; }
+    h1 { font-size: 28px; margin: 8px 0; }
+    p { color: #c9d3ea; line-height: 1.5; }
+    .alvo { width: 100%; max-width: 420px; border-radius: 12px; border: 3px solid #FFD84D; margin: 12px 0; }
+    .btn {
+      display: inline-block; margin: 8px 0 20px; padding: 16px 32px; border-radius: 999px;
+      background: #FFD84D; color: #111; font-weight: 700; font-size: 18px; text-decoration: none;
+    }
+    ol { text-align: left; color: #c9d3ea; line-height: 1.7; }
+    .card { background: rgba(255,255,255,.06); border-radius: 14px; padding: 16px 20px; margin-top: 12px; }
+    small { color: #8a96b3; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🕶️ Cartão Interativo em RA</h1>
+    <p>Aponte a câmera do celular para a árvore abaixo e veja objetos 3D aparecerem em cima dela.</p>
+
+    <a class="btn" href="ar.html">📷 Abrir câmera AR</a>
+
+    <div class="card">
+      <strong>Imagem-alvo</strong><br />
+      <small>Abra esta página no notebook/projetor (ou imprima) e aponte o celular para ela.</small>
+      <img class="alvo" src="assets/arvore.png" alt="Imagem-alvo para a realidade aumentada" />
+    </div>
+
+    <div class="card">
+      <strong>Como funciona</strong>
+      <ol>
+        <li>A câmera captura o vídeo em tempo real.</li>
+        <li>O <b>MindAR</b> extrai pontos característicos de cada quadro e compara com os da imagem-alvo (<code>arvore.mind</code>).</li>
+        <li>Quando reconhece, calcula a <b>posição e rotação</b> da imagem no espaço (pose).</li>
+        <li>O <b>A-Frame / Three.js</b> desenha o objeto 3D alinhado a essa pose, por cima do vídeo.</li>
+      </ol>
+    </div>
+
+    <p><small>Trabalho de Realidade Aumentada – Ciência da Computação</small></p>
+  </main>
+</body>
+</html>

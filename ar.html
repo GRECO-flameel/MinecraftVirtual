@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RA – Câmera</title>
+
+  <!-- A-Frame (motor 3D) + MindAR (reconhecimento de imagem) -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; }
+    #hud {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 16px; background: linear-gradient(transparent, rgba(0,0,0,.75));
+      color: #fff; text-align: center;
+    }
+    #status { font-size: 15px; }
+    #status.ok { color: #7CFFB2; font-weight: 600; }
+    #nome { font-size: 20px; font-weight: 700; }
+    button {
+      border: 0; border-radius: 999px; padding: 12px 20px; font-size: 15px; font-weight: 600;
+      background: rgba(255,255,255,.2); color: #fff; cursor: pointer;
+    }
+  </style>
+
+  <script>
+    // ===== Componente "mundo-de-blocos": monta a cena com cubos texturizados =====
+    const TAM = 0.1; // tamanho de cada bloco (a imagem-alvo tem 1 unidade de largura)
+
+    // textura de cada face: [+x, -x, topo, baixo, +z, -z]
+    const TIPOS = {
+      grama:      ['grama_lado','grama_lado','grama_topo','terra','grama_lado','grama_lado'],
+      terra:      'terra',
+      tronco:     ['tronco_lado','tronco_lado','tronco_topo','tronco_topo','tronco_lado','tronco_lado'],
+      folhas:     'folhas',
+      tabuas:     'tabuas',
+      pedra:      'pedra',
+      pedregulho: 'pedregulho',
+      agua:       'agua',
+      areia:      'areia'
+    };
+
+    // Mapa do chão 8x8 (camada de cima). G=grama, A=água, S=areia
+    const CHAO = [
+      'GGGGGGGG',
+      'GGGGSSSG',
+      'GGGSAASG',
+      'GGGSAASG',
+      'GGGGSSGG',
+      'GGGGGGGG',
+      'GGGGGGGG',
+      'GGGGGGGG'
+    ];
+
+    AFRAME.registerComponent('mundo-de-blocos', {
+      init() {
+        const THREE = AFRAME.THREE;
+        const loader = new THREE.TextureLoader();
+        const geo = new THREE.BoxGeometry(TAM, TAM, TAM);
+        const cacheMat = {}, texturas = {};
+
+        // brilho fixo por face (+x, -x, topo, baixo, +z, -z) para dar volume aos blocos
+        const BRILHO = [0.8, 0.8, 1.0, 0.5, 0.65, 0.65];
+
+        const material = (nome, b = 1) => {
+          const chave = nome + b;
+          if (cacheMat[chave]) return cacheMat[chave];
+          const tex = texturas[nome] || (texturas[nome] = loader.load('assets/blocos/' + nome + '.png'));
+          tex.magFilter = THREE.NearestFilter;   // mantém o visual "pixelado"
+          tex.minFilter = THREE.NearestFilter;
+          tex.colorSpace = THREE.SRGBColorSpace;
+          const transparente = nome === 'folhas' || nome === 'agua';
+          return cacheMat[chave] = new THREE.MeshBasicMaterial({
+            map: tex,
+            color: new THREE.Color(b, b, b),
+            transparent: nome === 'agua',
+            opacity: nome === 'agua' ? 0.85 : 1,
+            alphaTest: nome === 'folhas' ? 0.5 : 0,
+            side: transparente ? THREE.DoubleSide : THREE.FrontSide
+          });
+        };
+
+        const grupo = new THREE.Group();
+        const bloco = (tipo, x, y, z) => {
+          const t = TIPOS[tipo];
+          const mats = BRILHO.map((b, i) => material(Array.isArray(t) ? t[i] : t, b));
+          const m = new THREE.Mesh(geo, mats);
+          // centraliza o grid 8x8 em cima da imagem
+          m.position.set((x - 3.5) * TAM, (y + 0.5) * TAM, (z - 3.5) * TAM);
+          grupo.add(m);
+        };
+
+        // Camadas do chão: terra embaixo + grama/água/areia em cima
+        for (let z = 0; z < 8; z++) {
+          for (let x = 0; x < 8; x++) {
+            bloco('terra', x, 0, z);
+            const c = CHAO[z][x];
+            bloco(c === 'A' ? 'agua' : c === 'S' ? 'areia' : 'grama', x, 1, z);
+          }
+        }
+
+        // Árvore: tronco de 4 blocos + copa de folhas
+        const tx = 2, tz = 5;
+        for (let y = 2; y <= 5; y++) bloco('tronco', tx, y, tz);
+        for (let y = 4; y <= 7; y++) {
+          const r = y <= 5 ? 2 : 1;
+          for (let dx = -r; dx <= r; dx++) {
+            for (let dz = -r; dz <= r; dz++) {
+              if (y <= 5 && dx === 0 && dz === 0) continue;              // lugar do tronco
+              if (Math.abs(dx) === r && Math.abs(dz) === r && (y === 5 || y === 7)) continue; // cantos arredondados
+              bloco('folhas', tx + dx, y, tz + dz);
+            }
+          }
+        }
+
+        // Detalhes: pilha de pedra, bloco de tábuas e um murinho de pedregulho
+        bloco('pedra', 6, 2, 6); bloco('pedra', 7, 2, 6); bloco('pedra', 7, 2, 7); bloco('pedra', 7, 3, 7);
+        bloco('tabuas', 5, 2, 7); bloco('tabuas', 6, 2, 7);
+        for (let x = 0; x < 4; x++) bloco('pedregulho', x, 2, 0);
+
+        this.el.setObject3D('mesh', grupo);
+      }
+    });
+  </script>
+</head>
+<body>
+  <div id="hud">
+    <div id="nome">⛏️ Mundo de Blocos</div>
+    <div id="status">📷 Aponte a câmera para a imagem-alvo</div>
+    <button onclick="location.href='index.html'">Voltar</button>
+  </div>
+
+  <a-scene
+    mindar-image="imageTargetSrc: assets/arvore.mind; uiScanning: no; uiLoading: yes"
+    color-space="sRGB"
+    renderer="colorManagement: true; antialias: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <a-light type="ambient" intensity="0.7"></a-light>
+    <a-light type="directional" position="1 2 3" intensity="0.9"></a-light>
+
+    <!-- Tudo aqui dentro aparece "colado" na imagem-alvo -->
+    <a-entity id="alvo" mindar-image-target="targetIndex: 0">
+      <!-- rotation 90 0 0: o "chão" fica deitado sobre a imagem e os blocos crescem para fora dela -->
+      <a-entity mundo-de-blocos rotation="90 0 0"></a-entity>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    const status = document.getElementById('status');
+    const alvo = document.getElementById('alvo');
+    alvo.addEventListener('targetFound', () => {
+      status.textContent = '✅ Imagem reconhecida!';
+      status.className = 'ok';
+    });
+    alvo.addEventListener('targetLost', () => {
+      status.textContent = '📷 Aponte a câmera para a imagem-alvo';
+      status.className = '';
+    });
+  </script>
+</body>
+</html>
