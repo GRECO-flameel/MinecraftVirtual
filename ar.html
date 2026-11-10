@@ -89,6 +89,7 @@
           const t = TIPOS[tipo];
           const mats = BRILHO.map((b, i) => material(Array.isArray(t) ? t[i] : t, b));
           const m = new THREE.Mesh(geo, mats);
+        m.userData.tipo = tipo; // guarda o tipo para o clique saber qual bloco é
           // centraliza o grid 8x8 em cima da imagem
           m.position.set((x - 3.5) * TAM, (y + 0.5) * TAM, (z - 3.5) * TAM);
           grupo.add(m);
@@ -156,6 +157,13 @@
 
   <script>
     const status = document.getElementById('status');
+    const INFO = {
+      grama: '🌱 Esse é o bloco de grama!', terra: '🟫 Esse é o bloco de terra!',
+      tronco: '🪵 Esse é o bloco de tronco!', folhas: '🍃 Esse é o bloco de folhas!',
+      tabuas: '🪚 Esse é o bloco de tábuas!', pedra: '🪨 Esse é o bloco de pedra!',
+      pedregulho: '⛰️ Esse é o bloco de pedregulho!', agua: '💧 Esse é o bloco de água piriripororo!',
+      areia: '🏖️ Esse é o bloco de areia!'
+    };
     const alvo = document.getElementById('alvo');
     alvo.addEventListener('targetFound', () => {
       status.textContent = '✅ Imagem reconhecida!';
@@ -181,7 +189,8 @@
       o.quaternion.premultiply(q.setFromAxisAngle(dir, T.MathUtils.degToRad(graus)));
     };
     let ini = null;
-    window.addEventListener('pointerdown', e => ini = { x: e.clientX, y: e.clientY });
+    let toque = null;
+    window.addEventListener('pointerdown', e => toque = ini = { x: e.clientX, y: e.clientY });
     window.addEventListener('pointermove', e => {
       if (!ini) return;
       girar(CIMA, (e.clientX - ini.x) * 0.5);    // arrastar para os lados
@@ -189,6 +198,19 @@
       ini = { x: e.clientX, y: e.clientY };
     });
     ['pointerup', 'pointercancel'].forEach(ev => window.addEventListener(ev, () => ini = null));
+
+    // Toque rápido (sem arrastar) em um bloco
+    const ray = new T.Raycaster(), ponto = new T.Vector2();
+    window.addEventListener('pointerup', e => {
+      if (!toque || Math.hypot(e.clientX - toque.x, e.clientY - toque.y) > 10) return; // foi arrasto, não toque
+      const r = document.querySelector('a-scene').canvas.getBoundingClientRect();
+      ponto.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
+      ray.setFromCamera(ponto, cam.getObject3D('camera'));
+      const bloco = ray.intersectObject(mundo.object3D, true)[0]?.object;
+      if (!bloco) return;
+      status.textContent = INFO[bloco.userData.tipo]; // mostra o que é o bloco
+      bloco.parent.remove(bloco);                      // ⛏️ quebra o bloco
+    });
   </script>
 </body>
 </html>
