@@ -207,7 +207,9 @@
       ponto.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
       ray.setFromCamera(ponto, cam.getObject3D('camera'));
       const bloco = ray.intersectObject(mundo.object3D, true)[0]?.object;
-      if (bloco) status.textContent = INFO[bloco.userData.tipo];
+      if (!bloco) return;
+      status.textContent = INFO[bloco.userData.tipo]; // mostra o que é o bloco
+      bloco.parent.remove(bloco);                      // ⛏️ quebra o bloco
     });
   </script>
 </body>
