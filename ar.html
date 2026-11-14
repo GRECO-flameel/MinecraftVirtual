@@ -8,6 +8,7 @@
   <!-- A-Frame (motor 3D) + MindAR (reconhecimento de imagem) -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <script src="assets/texturas.js"></script>
 
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; touch-action: none; }
@@ -41,7 +42,9 @@
       pedra:      'pedra',
       pedregulho: 'pedregulho',
       agua:       'agua',
-      areia:      'areia'
+      areia:      'areia',
+      obsidiana:  'obsidiana', // textura gerada por código (assets/texturas.js)
+      portal:     'portal'     // textura gerada por código (assets/texturas.js)
     };
 
     // Mapa do chão 8x8 (camada de cima). G=grama, A=água, S=areia
@@ -69,16 +72,19 @@
         const material = (nome, b = 1) => {
           const chave = nome + b;
           if (cacheMat[chave]) return cacheMat[chave];
-          const tex = texturas[nome] || (texturas[nome] = loader.load('assets/blocos/' + nome + '.png'));
+          const tex = texturas[nome] || (texturas[nome] = TEXTURAS_GERADAS[nome]
+            ? TEXTURAS_GERADAS[nome]()
+            : loader.load('assets/blocos/' + nome + '.png'));
           tex.magFilter = THREE.NearestFilter;   // mantém o visual "pixelado"
           tex.minFilter = THREE.NearestFilter;
           tex.colorSpace = THREE.SRGBColorSpace;
-          const transparente = nome === 'folhas' || nome === 'agua';
+          const transparente = nome === 'folhas' || nome === 'agua' || nome === 'portal';
+          if (nome === 'portal') b = 1; // o portal tem luz própria
           return cacheMat[chave] = new THREE.MeshBasicMaterial({
             map: tex,
             color: new THREE.Color(b, b, b),
-            transparent: nome === 'agua',
-            opacity: nome === 'agua' ? 0.85 : 1,
+            transparent: nome === 'agua' || nome === 'portal',
+            opacity: nome === 'agua' ? 0.85 : nome === 'portal' ? 0.8 : 1,
             alphaTest: nome === 'folhas' ? 0.5 : 0,
             side: transparente ? THREE.DoubleSide : THREE.FrontSide
           });
@@ -123,7 +129,20 @@
         bloco('tabuas', 5, 2, 7); bloco('tabuas', 6, 2, 7);
         for (let x = 0; x < 4; x++) bloco('pedregulho', x, 2, 0);
 
+        // Portal do Nether: moldura de obsidiana 4x5 em pé na borda do mapa, ao lado do murinho
+        for (let x = 4; x <= 7; x++) {
+          for (let y = 2; y <= 6; y++) {
+            const borda = x === 4 || x === 7 || y === 2 || y === 6;
+            bloco(borda ? 'obsidiana' : 'portal', x, y, 0);
+          }
+        }
+
+        this.texturas = texturas;
         this.el.setObject3D('mesh', grupo);
+      },
+      tick(t) {
+        const portal = this.texturas.portal;
+        if (portal) portal.offset.y = (t * 0.0003) % 1; // portal "ondulando"
       }
     });
 
@@ -162,7 +181,7 @@
       tronco: '🪵 Esse é o bloco de tronco!', folhas: '🍃 Esse é o bloco de folhas!',
       tabuas: '🪚 Esse é o bloco de tábuas!', pedra: '🪨 Esse é o bloco de pedra!',
       pedregulho: '⛰️ Esse é o bloco de pedregulho!', agua: '💧 Esse é o bloco de água piriripororo!',
-      areia: '🏖️ Esse é o bloco de areia!'
+      areia: '🏖️ Esse é o bloco de areia!', obsidiana: '🟪 Esse é o bloco de obsidiana!'
     };
     const alvo = document.getElementById('alvo');
     alvo.addEventListener('targetFound', () => {
@@ -208,6 +227,11 @@
       ray.setFromCamera(ponto, cam.getObject3D('camera'));
       const bloco = ray.intersectObject(mundo.object3D, true)[0]?.object;
       if (!bloco) return;
+      if (bloco.userData.tipo === 'portal') {          // 🌀 entra no Nether
+        status.textContent = '🌀 Entrando no Nether...';
+        location.href = 'portal360.html';
+        return;
+      }
       status.textContent = INFO[bloco.userData.tipo]; // mostra o que é o bloco
       bloco.parent.remove(bloco);                      // ⛏️ quebra o bloco
     });

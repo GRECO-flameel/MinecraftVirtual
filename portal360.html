@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nether 360°</title>
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="assets/texturas.js"></script>
+
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; touch-action: none; }
+    #hud {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 16px; background: linear-gradient(transparent, rgba(0,0,0,.75));
+      color: #fff; text-align: center;
+    }
+    #nome { font-size: 20px; font-weight: 700; }
+    button {
+      border: 0; border-radius: 999px; padding: 12px 20px; font-size: 15px; font-weight: 600;
+      background: rgba(255,255,255,.2); color: #fff; cursor: pointer;
+    }
+  </style>
+
+  <script>
+    // ===== Componente "nether": monta uma caverna de blocos em volta da câmera =====
+    AFRAME.registerComponent('nether', {
+      init() {
+        const T = AFRAME.THREE;
+        const geo = new T.BoxGeometry(1, 1, 1);
+        const BRILHO = [0.8, 0.8, 1.0, 0.5, 0.65, 0.65]; // brilho por face (+x, -x, topo, baixo, +z, -z)
+        const BRILHAM = ['lava', 'glowstone', 'portal'];  // blocos que têm luz própria
+        const posicoes = {};                               // tipo -> lista de [x, y, z]
+        const bloco = (tipo, x, y, z) => (posicoes[tipo] = posicoes[tipo] || []).push([x, y, z]);
+        let s = 42; const r = () => (s = (s * 16807) % 2147483647) / 2147483647;
+
+        const RAIO = 12;
+        for (let x = -RAIO; x <= RAIO; x++) {
+          for (let z = -RAIO; z <= RAIO; z++) {
+            const d = Math.hypot(x, z);
+            if (d > RAIO) continue;
+            const teto = 8 + Math.floor(r() * 2);
+
+            // chão (topo em y = 0) com poças de lava longe do jogador
+            const lava = d > 5 && Math.sin(x * 0.7) + Math.cos(z * 0.6) > 1.3;
+            bloco(lava ? 'lava' : 'netherrack', x, -0.5, z);
+
+            // teto com pedras de luz espalhadas
+            bloco(r() < 0.08 ? 'glowstone' : 'netherrack', x, teto + 0.5, z);
+
+            // paredes da caverna
+            if (d > RAIO - 2) for (let y = 0; y < teto; y++) bloco('netherrack', x, y + 0.5, z);
+            // morrinhos e estalactites espalhados
+            else if (d > 5 && !lava && r() < 0.06) bloco('netherrack', x, 0.5, z);
+            else if (d > 4 && r() < 0.04) bloco('netherrack', x, teto - 0.5, z);
+          }
+        }
+
+        // Portal à frente do jogador (por onde ele chegou)
+        for (let x = -2; x <= 1; x++) {
+          for (let y = 0; y <= 4; y++) {
+            const borda = x === -2 || x === 1 || y === 0 || y === 4;
+            bloco(borda ? 'obsidiana' : 'portal', x + 0.5, y + 0.5, -4);
+          }
+        }
+
+        // um InstancedMesh por tipo de bloco: milhares de blocos com poucas chamadas de desenho
+        const m4 = new T.Matrix4();
+        for (const tipo in posicoes) {
+          const tex = TEXTURAS_GERADAS[tipo]();
+          const mats = BRILHO.map(b => {
+            const luz = BRILHAM.includes(tipo) ? 1 : b;
+            return new T.MeshBasicMaterial({
+              map: tex,
+              color: new T.Color(luz, luz, luz),
+              transparent: tipo === 'portal',
+              opacity: tipo === 'portal' ? 0.8 : 1,
+              side: tipo === 'portal' ? T.DoubleSide : T.FrontSide
+            });
+          });
+          const lista = posicoes[tipo];
+          const im = new T.InstancedMesh(geo, mats, lista.length);
+          lista.forEach(([x, y, z], i) => im.setMatrixAt(i, m4.makeTranslation(x, y, z)));
+          im.frustumCulled = false;
+          this.el.object3D.add(im);
+          if (tipo === 'portal') this.portal = tex;
+        }
+      },
+      tick(t) {
+        if (this.portal) this.portal.offset.y = (t * 0.0003) % 1; // portal "ondulando"
+      }
+    });
+  </script>
+</head>
+<body>
+  <div id="hud">
+    <div id="nome">🔥 Bem-vindo ao Nether!</div>
+    <div>Mova o celular ou arraste o dedo para olhar em volta</div>
+    <button onclick="location.href='ar.html'">Voltar pelo portal</button>
+  </div>
+
+  <a-scene
+    background="color: #2a0505"
+    fog="type: exponential; color: #3a0808; density: 0.07"
+    renderer="colorManagement: true; antialias: true"
+    vr-mode-ui="enabled: false">
+    <a-entity nether></a-entity>
+    <a-camera position="0 1.6 0" wasd-controls="enabled: false"></a-camera>
+  </a-scene>
+</body>
+</html>
