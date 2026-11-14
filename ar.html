@@ -22,6 +22,7 @@
     #status { font-size: 15px; }
     #status.ok { color: #7CFFB2; font-weight: 600; }
     #nome { font-size: 20px; font-weight: 700; }
+    .botoes { display: flex; gap: 10px; }
     button {
       border: 0; border-radius: 999px; padding: 12px 20px; font-size: 15px; font-weight: 600;
       background: rgba(255,255,255,.2); color: #fff; cursor: pointer;
@@ -152,7 +153,10 @@
   <div id="hud">
     <div id="nome">⛏️ Mundo de Blocos</div>
     <div id="status">📷 Aponte a câmera para a imagem-alvo</div>
-    <button onclick="location.href='index.html'">Voltar</button>
+    <div class="botoes">
+      <button id="resetar">🔄 Resetar mundo</button>
+      <button onclick="location.href='index.html'">Voltar</button>
+    </div>
   </div>
 
   <a-scene
@@ -221,6 +225,7 @@
     // Toque rápido (sem arrastar) em um bloco
     const ray = new T.Raycaster(), ponto = new T.Vector2();
     window.addEventListener('pointerup', e => {
+      if (e.target.closest('button')) return;           // toque nos botões não quebra bloco
       if (!toque || Math.hypot(e.clientX - toque.x, e.clientY - toque.y) > 10) return; // foi arrasto, não toque
       const r = document.querySelector('a-scene').canvas.getBoundingClientRect();
       ponto.set((e.clientX - r.left) / r.width * 2 - 1, -(e.clientY - r.top) / r.height * 2 + 1);
@@ -233,7 +238,21 @@
         return;
       }
       status.textContent = INFO[bloco.userData.tipo]; // mostra o que é o bloco
-      bloco.parent.remove(bloco);                      // ⛏️ quebra o bloco
+      quebrar(bloco);
+      if (bloco.userData.tipo === 'obsidiana') {
+        const roxos = [];
+        mundo.object3D.traverse(o => o.userData.tipo === 'portal' && roxos.push(o));
+        roxos.forEach(quebrar);
+        if (roxos.length) status.textContent = '💨 O portal se desfez!';
+      }
+    });
+
+    const quebrados = [];
+    const quebrar = b => { quebrados.push([b, b.parent]); b.parent.remove(b); };
+    document.getElementById('resetar').addEventListener('click', () => {
+      quebrados.forEach(([b, pai]) => pai.add(b));
+      quebrados.length = 0;
+      status.textContent = '🔄 Mundo restaurado!';
     });
   </script>
 </body>
