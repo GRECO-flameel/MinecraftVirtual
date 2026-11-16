@@ -6,7 +6,6 @@
   <title>Nether 360°</title>
 
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="assets/texturas.js"></script>
 
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; touch-action: none; }
@@ -68,7 +67,10 @@
         // um InstancedMesh por tipo de bloco: milhares de blocos com poucas chamadas de desenho
         const m4 = new T.Matrix4();
         for (const tipo in posicoes) {
-          const tex = TEXTURAS_GERADAS[tipo]();
+          const tex = new T.TextureLoader().load('assets/blocos/' + tipo + '.png');
+          tex.magFilter = tex.minFilter = T.NearestFilter; // mantém o visual "pixelado"
+          tex.wrapS = tex.wrapT = T.RepeatWrapping;        // permite animar o portal
+          tex.colorSpace = T.SRGBColorSpace;
           const mats = BRILHO.map(b => {
             const luz = BRILHAM.includes(tipo) ? 1 : b;
             return new T.MeshBasicMaterial({

@@ -8,7 +8,6 @@
   <!-- A-Frame (motor 3D) + MindAR (reconhecimento de imagem) -->
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-  <script src="assets/texturas.js"></script>
 
   <style>
     html, body { margin: 0; height: 100%; overflow: hidden; font-family: system-ui, sans-serif; touch-action: none; }
@@ -44,8 +43,8 @@
       pedregulho: 'pedregulho',
       agua:       'agua',
       areia:      'areia',
-      obsidiana:  'obsidiana', // textura gerada por código (assets/texturas.js)
-      portal:     'portal'     // textura gerada por código (assets/texturas.js)
+      obsidiana:  'obsidiana',
+      portal:     'portal'
     };
 
     // Mapa do chão 8x8 (camada de cima). G=grama, A=água, S=areia
@@ -73,11 +72,10 @@
         const material = (nome, b = 1) => {
           const chave = nome + b;
           if (cacheMat[chave]) return cacheMat[chave];
-          const tex = texturas[nome] || (texturas[nome] = TEXTURAS_GERADAS[nome]
-            ? TEXTURAS_GERADAS[nome]()
-            : loader.load('assets/blocos/' + nome + '.png'));
+          const tex = texturas[nome] || (texturas[nome] = loader.load('assets/blocos/' + nome + '.png'));
           tex.magFilter = THREE.NearestFilter;   // mantém o visual "pixelado"
           tex.minFilter = THREE.NearestFilter;
+          if (nome === 'portal') tex.wrapS = tex.wrapT = THREE.RepeatWrapping; // permite animar o portal
           tex.colorSpace = THREE.SRGBColorSpace;
           const transparente = nome === 'folhas' || nome === 'agua' || nome === 'portal';
           if (nome === 'portal') b = 1; // o portal tem luz própria
